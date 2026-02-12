@@ -989,6 +989,15 @@
   </footer>
 
   <script>
+    // Force scroll to top on fresh page load
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener('load', function() {
+      if (!window.location.hash) {
+        setTimeout(function() { window.scrollTo(0, 0); }, 0);
+      }
+    });
     // Nav scroll effect
     window.addEventListener('scroll', function() {
       document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
