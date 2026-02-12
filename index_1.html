@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrackPulse — Your shipments, one dashboard</title>
+  <meta name="description" content="Auto-scan your email for tracking numbers. See every shipment in one live dashboard. DHL, FedEx, UPS, USPS and more.">
+  <meta property="og:title" content="TrackPulse — Your shipments, one dashboard">
+  <meta property="og:description" content="Auto-scan your email for tracking numbers. See every shipment in one live dashboard.">
+  <meta property="og:image" content="https://aydin96.github.io/trackpulse/og-image.png">
+  <meta property="og:url" content="https://aydin96.github.io/trackpulse/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TrackPulse — Your shipments, one dashboard">
+  <meta name="twitter:description" content="Auto-scan your email for tracking numbers. See every shipment in one live dashboard.">
+  <meta name="twitter:image" content="https://aydin96.github.io/trackpulse/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='none' stroke='%23D4A053' stroke-width='2'/><circle cx='16' cy='16' r='6' fill='%23D4A053'/></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0D12;
+      --surface: #12161E;
+      --surface-2: #1A1F2B;
+      --border: #242C3A;
+      --text: #E8ECF2;
+      --text-dim: #6B7688;
+      --accent: #D4A053;
+      --accent-glow: rgba(212, 160, 83, 0.15);
+      --accent-strong: #E8B86D;
+      --delivered: #3ECF8E;
+      --transit: #5B9DF5;
+      --warning: #F5A623;
+      --error: #EF6B6B;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* === GRAIN OVERLAY === */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* === AMBIENT GLOW === */
+    .glow-top {
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(212, 160, 83, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* === NAV === */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      transition: background 0.3s, backdrop-filter 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(10, 13, 18, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #B8863A);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--bg);
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .nav-cta:hover { background: var(--accent-strong); transform: translateY(-1px); }
+
+    /* === HERO === */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 32px 80px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--delivered);
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    #audienceRotator {
+      display: inline-block;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 6vw, 72px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      max-width: 800px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s ease 0.1s both;
+    }
+
+    h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-dim);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+      animation: fadeUp 0.8s ease 0.2s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.8s ease 0.3s both;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #B8863A);
+      color: var(--bg);
+      border: none;
+      padding: 16px 36px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212, 160, 83, 0.3); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 16px 36px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .btn-secondary:hover { border-color: var(--text-dim); color: var(--text); }
+
+    .hero-price {
+      margin-top: 24px;
+      font-size: 14px;
+      color: var(--text-dim);
+      animation: fadeUp 0.8s ease 0.4s both;
+    }
+
+    .hero-price strong {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    /* === DASHBOARD PREVIEW === */
+    .preview-section {
+      position: relative;
+      max-width: 1100px;
+      margin: -20px auto 0;
+      padding: 0 32px 100px;
+      animation: fadeUp 1s ease 0.5s both;
+    }
+
+    .preview-frame {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(212, 160, 83, 0.05);
+    }
+
+    .preview-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--surface-2);
+    }
+
+    .preview-dot:nth-child(1) { background: #EF6B6B; }
+    .preview-dot:nth-child(2) { background: #F5A623; }
+    .preview-dot:nth-child(3) { background: #3ECF8E; }
+
+    .preview-content {
+      padding: 24px;
+    }
+
+    /* Mini dashboard recreation */
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .mini-stat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .mini-stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .mini-stat .val { font-size: 24px; font-weight: 700; margin-top: 4px; }
+    .mini-stat.del .val { color: var(--delivered); }
+    .mini-stat.tra .val { color: var(--transit); }
+    .mini-stat.att .val { color: var(--warning); }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .mini-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mini-table td {
+      padding: 12px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mini-table tr { transition: background 0.2s; }
+
+    .mini-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .mini-badge.del { background: rgba(62,207,142,0.1); color: var(--delivered); }
+    .mini-badge.tra { background: rgba(91,157,245,0.1); color: var(--transit); }
+    .mini-badge.att { background: rgba(245,166,35,0.1); color: var(--warning); }
+
+    .mini-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .carrier-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .carrier-pill::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #FFCC00;
+    }
+
+    /* === FEATURES === */
+    .features {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 32px;
+    }
+
+    .section-label {
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 64px;
+      max-width: 500px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(212, 160, 83, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-glow);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* === HOW IT WORKS === */
+    .how-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 32px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 64px;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 32px;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), var(--accent), var(--border), transparent);
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-num {
+      width: 64px;
+      height: 64px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 auto 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    /* === PRICING === */
+    .pricing {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 32px;
+      text-align: center;
+    }
+
+    .pricing-card {
+      max-width: 440px;
+      margin: 48px auto 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    }
+
+    .pricing-amount {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .pricing-dollar {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .pricing-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 64px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+
+    .pricing-period {
+      font-size: 16px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 36px;
+    }
+
+    .pricing-features li {
+      padding: 10px 0;
+      font-size: 15px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pricing-features li:last-child { border: none; }
+
+    .pricing-check {
+      color: var(--delivered);
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .btn-full {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #B8863A);
+      color: var(--bg);
+      border: none;
+      padding: 16px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-full:hover { box-shadow: 0 8px 32px rgba(212, 160, 83, 0.3); transform: translateY(-2px); }
+
+    .pricing-note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* === SIGNUP FORM === */
+    .signup-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 32px 120px;
+      text-align: center;
+    }
+
+    .signup-box {
+      max-width: 500px;
+      margin: 48px auto 0;
+    }
+
+    .signup-form {
+      display: flex;
+      gap: 12px;
+    }
+
+    .signup-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .signup-input::placeholder { color: var(--text-dim); }
+    .signup-input:focus { border-color: var(--accent); }
+
+    .signup-btn {
+      background: linear-gradient(135deg, var(--accent), #B8863A);
+      color: var(--bg);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .signup-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212, 160, 83, 0.3); }
+
+    .signup-note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .signup-success {
+      display: none;
+      padding: 24px;
+      background: rgba(62, 207, 142, 0.1);
+      border: 1px solid rgba(62, 207, 142, 0.2);
+      border-radius: 10px;
+      color: var(--delivered);
+      font-weight: 600;
+    }
+
+    /* === FOOTER === */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 32px;
+      text-align: center;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-text {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text); }
+
+    /* === ANIMATIONS === */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; gap: 32px; }
+      .steps::before { display: none; }
+      .mini-stats { grid-template-columns: repeat(2, 1fr); }
+      .mini-table th:nth-child(4), .mini-table td:nth-child(4),
+      .mini-table th:nth-child(5), .mini-table td:nth-child(5) { display: none; }
+      .signup-form { flex-direction: column; }
+      .footer-inner { flex-direction: column; gap: 16px; }
+      .hero { padding: 100px 20px 60px; }
+      .nav-cta { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="nav-inner">
+      <a class="logo" href="#">
+        <div class="logo-mark">TP</div>
+        <div class="logo-text">Track<span>Pulse</span></div>
+      </a>
+      <a class="nav-cta" href="#signup">Start Free Trial</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="glow-top"></div>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      Built for <span id="audienceRotator" style="color:var(--text);font-weight:500;">Apparel &amp; Sourcing Professionals</span>
+    </div>
+    <h1>Your shipments.<br>One <span class="highlight">living dashboard.</span></h1>
+    <p class="hero-sub">TrackPulse reads your email, finds every tracking number, and gives you a real-time dashboard across DHL, FedEx, UPS, TNT, and 3,100+ carriers. No manual entry. No spreadsheets. No logging into five carrier sites.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#signup">Start Free Trial &rarr;</a>
+      <a class="btn-secondary" href="#how">See How It Works</a>
+    </div>
+    <div class="hero-price"><strong>Free for 30 days</strong> &mdash; then $1.99/mo or $19.99/yr</div>
+  </section>
+
+  <!-- DASHBOARD PREVIEW -->
+  <div class="preview-section">
+    <div class="preview-frame">
+      <div class="preview-titlebar">
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+      </div>
+      <div class="preview-content">
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <div class="label">Total</div>
+            <div class="val">24</div>
+          </div>
+          <div class="mini-stat del">
+            <div class="label">Delivered</div>
+            <div class="val">16</div>
+          </div>
+          <div class="mini-stat tra">
+            <div class="label">In Transit</div>
+            <div class="val">6</div>
+          </div>
+          <div class="mini-stat att">
+            <div class="label">Attention</div>
+            <div class="val">2</div>
+          </div>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Sender</th><th>Receiver</th><th>Carrier</th><th>AWB</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600;">Wool Mill</td>
+              <td>Sourcing Office</td>
+              <td><span class="carrier-pill">DHL</span></td>
+              <td style="font-family:'JetBrains Mono';font-size:12px;color:var(--accent);">4549733646</td>
+              <td><span class="mini-badge tra">In Transit</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Shenzhen MFG</td>
+              <td>Portland HQ</td>
+              <td><span class="carrier-pill" style="--carrier:#4D148C;">FedEx</span></td>
+              <td style="font-family:'JetBrains Mono';font-size:12px;color:var(--accent);">888683666530</td>
+              <td><span class="mini-badge del">Delivered</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Milano Showroom</td>
+              <td>Sample Dept</td>
+              <td><span class="carrier-pill">DHL</span></td>
+              <td style="font-family:'JetBrains Mono';font-size:12px;color:var(--accent);">5693835836</td>
+              <td><span class="mini-badge tra">In Transit</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Seoul Lab</td>
+              <td>Quality Team</td>
+              <td><span class="carrier-pill">UPS</span></td>
+              <td style="font-family:'JetBrains Mono';font-size:12px;color:var(--accent);">1ZEX421604</td>
+              <td><span class="mini-badge att">Exception</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features reveal">
+    <div class="section-label">Features</div>
+    <div class="section-title">Everything happens automatically</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#128233;</div>
+        <h3>Email-Powered Detection</h3>
+        <p>TrackPulse scans your inbox and automatically extracts tracking numbers from shipping notifications. Works with suppliers, factories, showrooms, labs — any sender, any language.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#127760;</div>
+        <h3>All Carriers, One View</h3>
+        <p>DHL Express, FedEx, UPS, TNT, and 3,100+ carriers worldwide. Real-time status from a single dashboard instead of five different websites.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128276;</div>
+        <h3>Smart Alerts</h3>
+        <p>Get notified when shipments are delivered, stuck in customs, or hit exceptions. Color-coded email alerts so nothing slips through the cracks.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128301;</div>
+        <h3>Sender &amp; Receiver Detection</h3>
+        <p>Automatically identifies who sent the shipment and where it's going. No manual data entry — TrackPulse reads the context from your emails.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128241;</div>
+        <h3>Mobile Friendly</h3>
+        <p>Check shipment status from your phone at trade shows, airports, or factory visits. Responsive design that works everywhere.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128274;</div>
+        <h3>Private &amp; Secure</h3>
+        <p>Your data stays in your own Google account. We never store your emails or shipment data on our servers. You own everything.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section reveal" id="how">
+    <div class="section-label">How It Works</div>
+    <div class="section-title">Up and running in 2 minutes</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Connect Google Workspace / Gmail</h3>
+        <p>Sign in with your Google account — works with Gmail and Google Workspace business email. Read-only access, we only look for shipping emails.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Auto-Scan</h3>
+        <p>TrackPulse finds every tracking number from your suppliers, vendors, and partners — going back 14 days — and checks status across all carriers instantly.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Stay Updated</h3>
+        <p>Your dashboard updates automatically. Get email alerts for deliveries, customs holds, exceptions, and delays — without lifting a finger.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing reveal">
+    <div class="section-label">Pricing</div>
+    <div class="section-title" style="margin-left:auto;margin-right:auto;">Simple. One plan.<br>No surprises.</div>
+    <div class="pricing-card" style="max-width:520px;">
+      <!-- Free trial banner -->
+      <div style="background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.15);border-radius:10px;padding:16px;margin-bottom:32px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--delivered);margin-bottom:4px;">Start Free for 30 Days</div>
+        <div style="font-size:14px;color:var(--text-dim);">Full access, no credit card required</div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Then choose your plan</div>
+
+      <!-- Two plan toggle -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:32px;">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;">
+          <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Monthly</div>
+          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;">
+            <span style="font-size:18px;color:var(--accent);font-weight:600;">$</span>
+            <span style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;line-height:1;">1.99</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">/month</div>
+        </div>
+        <div style="background:var(--accent-glow);border:1px solid rgba(212,160,83,0.3);border-radius:10px;padding:20px;text-align:center;position:relative;">
+          <div style="position:absolute;top:-10px;right:12px;background:var(--accent);color:var(--bg);font-size:10px;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;">SAVE 17%</div>
+          <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Annual</div>
+          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;">
+            <span style="font-size:18px;color:var(--accent);font-weight:600;">$</span>
+            <span style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;line-height:1;">19.99</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">/year</div>
+        </div>
+      </div>
+
+      <ul class="pricing-features">
+        <li><span class="pricing-check">&#10003;</span> Unlimited shipment tracking</li>
+        <li><span class="pricing-check">&#10003;</span> All carriers (DHL, FedEx, UPS, TNT + 3,100 more)</li>
+        <li><span class="pricing-check">&#10003;</span> Auto email scanning every 4 hours</li>
+        <li><span class="pricing-check">&#10003;</span> Smart status change alerts</li>
+        <li><span class="pricing-check">&#10003;</span> Sender &amp; receiver auto-detection</li>
+        <li><span class="pricing-check">&#10003;</span> Mobile-friendly dashboard</li>
+        <li><span class="pricing-check">&#10003;</span> Your data stays in your Google account</li>
+      </ul>
+      <button class="btn-full" onclick="document.getElementById('signup').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
+      <div class="pricing-note">No credit card needed. Cancel anytime.</div>
+    </div>
+  </section>
+
+  <!-- SIGNUP -->
+  <section class="signup-section reveal" id="signup">
+    <div class="section-label">Early Access</div>
+    <div class="section-title" style="margin-left:auto;margin-right:auto;">Be the first to know<br>when we launch</div>
+    <div class="signup-box">
+      <div class="signup-form" id="signupForm">
+        <input class="signup-input" type="email" id="emailInput" placeholder="your@email.com" required>
+        <button class="signup-btn" onclick="submitSignup()">Join Waitlist</button>
+      </div>
+      <div class="signup-success" id="signupSuccess">
+        &#10003; You're on the list! We'll email you when TrackPulse is ready.
+      </div>
+      <div class="signup-note">No spam. Just a launch notification.</div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-text">&copy; 2026 TrackPulse. Shipment tracking on autopilot.</div>
+      <div class="footer-links">
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Force scroll to top on fresh page load
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener('load', function() {
+      if (!window.location.hash) {
+        setTimeout(function() { window.scrollTo(0, 0); }, 0);
+      }
+    });
+    // Nav scroll effect
+    window.addEventListener('scroll', function() {
+      document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Audience rotator
+    var audiences = [
+      'Apparel &amp; Sourcing Professionals',
+      'Production &amp; Development Teams',
+      'Import &amp; Export Managers',
+      'Freight &amp; Logistics Coordinators',
+      'E-Commerce Operations Teams',
+      'Procurement &amp; Supply Chain Leads',
+      'Anyone Tracking International &amp; Domestic Shipments'
+    ];
+    var audienceIndex = 0;
+    var rotator = document.getElementById('audienceRotator');
+
+    function rotateAudience() {
+      rotator.style.opacity = '0';
+      rotator.style.transform = 'translateY(8px)';
+      setTimeout(function() {
+        audienceIndex = (audienceIndex + 1) % audiences.length;
+        rotator.innerHTML = audiences[audienceIndex];
+        rotator.style.opacity = '1';
+        rotator.style.transform = 'translateY(0)';
+      }, 300);
+    }
+    setInterval(rotateAudience, 2800);
+
+    // Scroll reveal
+    var reveals = document.querySelectorAll('.reveal');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(function(el) { observer.observe(el); });
+
+    // Signup
+    function submitSignup() {
+      var email = document.getElementById('emailInput').value;
+      if (!email || email.indexOf('@') < 0) {
+        document.getElementById('emailInput').style.borderColor = '#EF6B6B';
+        return;
+      }
+      
+      // Disable button while submitting
+      var btn = document.querySelector('.signup-btn');
+      btn.textContent = 'Joining...';
+      btn.disabled = true;
+      
+      // POST to Google Sheet
+      fetch('https://script.google.com/macros/s/AKfycbwQdDZjso73k1Z1kTkV9QVWhSDibS9-DSMoY-2MJxhwglwPBNExEPz7yEbIN5BG-bLpAA/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      }).then(function() {
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('signupSuccess').style.display = 'block';
+      }).catch(function() {
+        // Even if fetch fails silently (no-cors), the data was sent
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('signupSuccess').style.display = 'block';
+      });
+    }
+
+    // Enter key submits
+    document.getElementById('emailInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') submitSignup();
+    });
+  </script>
+
+</body>
+</html>
