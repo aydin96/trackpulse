@@ -221,33 +221,49 @@
     }
 
     .no-cp-line {
-      font-size: clamp(16px, 2vw, 20px);
-      margin-bottom: 48px;
+      font-size: clamp(15px, 1.8vw, 18px);
+      margin-bottom: 16px;
       animation: fadeUp 0.8s ease 0.3s both;
     }
     .no-cp-static {
       color: var(--text-dim);
     }
     .no-cp-word {
-      display: inline-block;
+      display: inline;
+      position: relative;
       color: var(--text);
-      padding: 0 4px;
-      border-radius: 4px;
-      transition: opacity 0.4s, background 0.6s;
+      padding: 2px 0;
     }
-    .no-cp-word.highlight {
-      background: rgba(212, 160, 83, 0.25);
-      color: var(--accent);
+    .no-cp-word::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      background: rgba(66, 133, 244, 0.35);
+      border-radius: 2px;
+      transition: none;
+      z-index: -1;
     }
-    .no-cp-word.blink {
-      animation: cpBlink 0.3s ease 2;
+    .no-cp-word.selecting::before {
+      width: 100%;
+      transition: width 0.8s ease;
+    }
+    .no-cp-word.selected {
+      color: #fff;
+    }
+    .no-cp-word.selected::before {
+      width: 100%;
+      background: rgba(66, 133, 244, 0.4);
     }
     .no-cp-word.gone {
       opacity: 0;
+      transition: opacity 0.3s;
     }
-    @keyframes cpBlink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
+    .no-cp-word.pop {
+      opacity: 1;
+      transition: opacity 0.15s;
     }
 
     .hero-actions {
@@ -822,8 +838,8 @@
     <p class="hero-sub">TrackPulse detects tracking numbers from your shipping notifications, whether from suppliers, customers, or carriers, and gives you a real-time dashboard across DHL, FedEx, UPS, TNT, and 3,100+ carriers.</p>
     <p class="hero-nos">No manual entry. No spreadsheets. No logging into five carrier sites.</p>
     <div class="no-cp-line">
-      <span class="no-cp-static">No</span>
-      <span class="no-cp-word" id="cpWord">copy.</span>
+      <span class="no-cp-static">No more need to</span>
+      <span class="no-cp-word" id="cpWord">Copy</span>
     </div>
     <div class="hero-actions">
       <a class="btn-primary" href="#signup">Start Free Trial &rarr;</a>
@@ -1060,7 +1076,8 @@
       'Freight &amp; Logistics Coordinators',
       'E-Commerce Operations Teams',
       'Procurement &amp; Supply Chain Leads',
-      'Anyone Tracking International &amp; Domestic Shipments'
+      'Tracking Number Hunters',
+      'You Know Who You Are'
     ];
     var audienceIndex = 0;
     var rotator = document.getElementById('audienceRotator');
@@ -1077,53 +1094,53 @@
     }
     setInterval(rotateAudience, 2800);
 
-    // Copy & Paste animation
+    // Copy & Paste animation — simulates mouse highlight selection
     var cpWord = document.getElementById('cpWord');
     function runCopyPaste() {
-      // Start: "No copy."
-      cpWord.textContent = 'copy.';
+      // Reset: show "Copy"
+      cpWord.textContent = 'Copy';
       cpWord.className = 'no-cp-word';
       
-      // Step 1: Highlight "copy" slowly
+      // Step 1: Highlight sweeps left to right (like mouse selecting)
       setTimeout(function() {
-        cpWord.classList.add('highlight');
-      }, 500);
+        cpWord.classList.add('selecting');
+      }, 600);
       
-      // Step 2: Blink
+      // Step 2: Fully selected look
       setTimeout(function() {
-        cpWord.classList.add('blink');
-      }, 1500);
+        cpWord.classList.add('selected');
+      }, 1400);
       
-      // Step 3: Disappear
-      setTimeout(function() {
-        cpWord.classList.remove('blink');
-        cpWord.classList.add('gone');
-      }, 2200);
-      
-      // Step 4: Boom — "paste." appears highlighted
-      setTimeout(function() {
-        cpWord.textContent = 'paste.';
-        cpWord.className = 'no-cp-word highlight';
-      }, 3200);
-      
-      // Step 5: Fade highlight away, settle
-      setTimeout(function() {
-        cpWord.classList.remove('highlight');
-      }, 4500);
-      
-      // Step 6: Reset back to "copy."
+      // Step 3: Disappear (copied!)
       setTimeout(function() {
         cpWord.classList.add('gone');
-      }, 5800);
+      }, 2400);
       
+      // Step 4: "Paste" pops in after 1.5s gap
       setTimeout(function() {
-        cpWord.textContent = 'copy.';
+        cpWord.textContent = 'Paste';
+        cpWord.className = 'no-cp-word selected pop';
+      }, 3900);
+      
+      // Step 5: Selection fades, text settles
+      setTimeout(function() {
         cpWord.className = 'no-cp-word';
-      }, 6400);
+      }, 5200);
+      
+      // Step 6: Fade out before reset
+      setTimeout(function() {
+        cpWord.classList.add('gone');
+      }, 6500);
+      
+      // Step 7: Reset to "Copy"
+      setTimeout(function() {
+        cpWord.textContent = 'Copy';
+        cpWord.className = 'no-cp-word';
+      }, 7000);
     }
     
     setTimeout(runCopyPaste, 2500);
-    setInterval(runCopyPaste, 7500);
+    setInterval(runCopyPaste, 8500);
 
     // Scroll reveal
     var reveals = document.querySelectorAll('.reveal');
