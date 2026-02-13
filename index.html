@@ -171,7 +171,8 @@
       height: 6px;
       background: var(--delivered);
       border-radius: 50%;
-      animation: pulse 2s ease infinite;
+      flex-shrink: 0;
+      animation: pulse 1.2s ease infinite;
     }
 
     #audienceRotator {
@@ -181,7 +182,7 @@
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.3; }
     }
 
     h1 {
@@ -207,8 +208,46 @@
       color: var(--text-dim);
       max-width: 560px;
       line-height: 1.7;
-      margin-bottom: 48px;
+      margin-bottom: 8px;
       animation: fadeUp 0.8s ease 0.2s both;
+    }
+
+    .hero-nos {
+      font-size: clamp(15px, 1.8vw, 18px);
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      animation: fadeUp 0.8s ease 0.25s both;
+      white-space: nowrap;
+    }
+
+    .no-cp-line {
+      font-size: clamp(16px, 2vw, 20px);
+      margin-bottom: 48px;
+      animation: fadeUp 0.8s ease 0.3s both;
+    }
+    .no-cp-static {
+      color: var(--text-dim);
+    }
+    .no-cp-word {
+      display: inline-block;
+      color: var(--text);
+      padding: 0 4px;
+      border-radius: 4px;
+      transition: opacity 0.4s, background 0.6s;
+    }
+    .no-cp-word.highlight {
+      background: rgba(212, 160, 83, 0.25);
+      color: var(--accent);
+    }
+    .no-cp-word.blink {
+      animation: cpBlink 0.3s ease 2;
+    }
+    .no-cp-word.gone {
+      opacity: 0;
+    }
+    @keyframes cpBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
 
     .hero-actions {
@@ -780,7 +819,12 @@
       Built for <span id="audienceRotator" style="color:var(--text);font-weight:500;">Apparel &amp; Sourcing Professionals</span>
     </div>
     <h1>Your shipments.<br>One <span class="highlight">living dashboard.</span></h1>
-    <p class="hero-sub">TrackPulse reads your email, finds every tracking number, and gives you a real-time dashboard across DHL, FedEx, UPS, TNT, and 3,100+ carriers. No manual entry. No spreadsheets. No logging into five carrier sites.</p>
+    <p class="hero-sub">TrackPulse detects tracking numbers from your shipping notifications, whether from suppliers, customers, or carriers, and gives you a real-time dashboard across DHL, FedEx, UPS, TNT, and 3,100+ carriers.</p>
+    <p class="hero-nos">No manual entry. No spreadsheets. No logging into five carrier sites.</p>
+    <div class="no-cp-line">
+      <span class="no-cp-static">No</span>
+      <span class="no-cp-word" id="cpWord">copy.</span>
+    </div>
     <div class="hero-actions">
       <a class="btn-primary" href="#signup">Start Free Trial &rarr;</a>
       <a class="btn-secondary" href="#how">See How It Works</a>
@@ -1033,6 +1077,54 @@
     }
     setInterval(rotateAudience, 2800);
 
+    // Copy & Paste animation
+    var cpWord = document.getElementById('cpWord');
+    function runCopyPaste() {
+      // Start: "No copy."
+      cpWord.textContent = 'copy.';
+      cpWord.className = 'no-cp-word';
+      
+      // Step 1: Highlight "copy" slowly
+      setTimeout(function() {
+        cpWord.classList.add('highlight');
+      }, 500);
+      
+      // Step 2: Blink
+      setTimeout(function() {
+        cpWord.classList.add('blink');
+      }, 1500);
+      
+      // Step 3: Disappear
+      setTimeout(function() {
+        cpWord.classList.remove('blink');
+        cpWord.classList.add('gone');
+      }, 2200);
+      
+      // Step 4: Boom — "paste." appears highlighted
+      setTimeout(function() {
+        cpWord.textContent = 'paste.';
+        cpWord.className = 'no-cp-word highlight';
+      }, 3200);
+      
+      // Step 5: Fade highlight away, settle
+      setTimeout(function() {
+        cpWord.classList.remove('highlight');
+      }, 4500);
+      
+      // Step 6: Reset back to "copy."
+      setTimeout(function() {
+        cpWord.classList.add('gone');
+      }, 5800);
+      
+      setTimeout(function() {
+        cpWord.textContent = 'copy.';
+        cpWord.className = 'no-cp-word';
+      }, 6400);
+    }
+    
+    setTimeout(runCopyPaste, 2500);
+    setInterval(runCopyPaste, 7500);
+
     // Scroll reveal
     var reveals = document.querySelectorAll('.reveal');
     var observer = new IntersectionObserver(function(entries) {
@@ -1057,17 +1149,18 @@
       btn.textContent = 'Joining...';
       btn.disabled = true;
       
-      // POST to Google Sheet
+      // POST to Google Sheet using form data (works with no-cors)
+      var formData = new FormData();
+      formData.append('email', email);
+      
       fetch('https://script.google.com/macros/s/AKfycbwQdDZjso73k1Z1kTkV9QVWhSDibS9-DSMoY-2MJxhwglwPBNExEPz7yEbIN5BG-bLpAA/exec', {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email })
+        body: formData
       }).then(function() {
         document.getElementById('signupForm').style.display = 'none';
         document.getElementById('signupSuccess').style.display = 'block';
       }).catch(function() {
-        // Even if fetch fails silently (no-cors), the data was sent
         document.getElementById('signupForm').style.display = 'none';
         document.getElementById('signupSuccess').style.display = 'block';
       });
